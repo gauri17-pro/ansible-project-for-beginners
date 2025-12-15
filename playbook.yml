@@ -1,0 +1,46 @@
+---
+- name: Install AWS CLI and download S3 file
+  hosts: web-servers
+  become: yes
+  vars_files:
+    - aws_credentials.yml 
+
+  vars: 
+    aws_region: ap-south-1
+    s3_bucket: learning-guide-14-12-25
+    s3_object: architecture.txt
+    dest_path: /home/ubuntu/
+
+  tasks:
+    - name: Install dependencies
+      apt:
+        name:
+          - unzip 
+          - curl 
+        state: present
+        update_cache: yes 
+    
+    - name: Download AWS CLI 
+      get_url:
+        url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+        dest: /home/ubuntu/awscliv2.zip
+        mode: '0644'
+    
+    - name: Unzip AWS CLI 
+      unarchive:
+        src: /home/ubuntu/awscliv2.zip
+        dest: /home/ubuntu 
+        remote_src: yes
+
+    - name: Install AWS CLI 
+      command: ./aws/install 
+      become: yes 
+      args:
+        creates: /usr/local/bin/aws
+
+    - name: Download file from S3 
+      command: aws s3 cp s3://{{ s3_bucket }}/{{ s3_object }} {{ dest_path }}
+      environment:
+        AWS_ACCESS_KEY_ID: "{{ access_key }}"
+        AWS_SECRET_ACCESS_KEY: "{{ secret_access_key }}" 
+        AWS_DEFAULT_REGION: "{{ aws_region }}"
